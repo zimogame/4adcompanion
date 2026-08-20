@@ -1,3 +1,5 @@
+import { rollExplodingDie, formatRollString } from './characters.js';
+
 let diceLog = [];
 let onRoll = null;
 
@@ -58,9 +60,12 @@ function rollDie(dieType) {
       result = `${sum}`;
       displayLabel = `2D6: ${d1}+${d2} = ${sum}`;
     } else {
-      // standard die
-      const sides = parseInt(dieType.substring(1), 10);
-      result = `${Math.floor(Math.random() * sides) + 1}`;
+      // standard die (exploding)
+      const rollResult = rollExplodingDie(dieType);
+      result = `${rollResult.total}`;
+      if (rollResult.rolls.length > 1) {
+        displayLabel = `${dieType.toUpperCase()}: ${formatRollString(rollResult.rolls)} = ${result}`;
+      }
     }
     
     resultElem.classList.remove('rolling');

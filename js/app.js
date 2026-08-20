@@ -1,7 +1,8 @@
 import { createNewSession, saveSession, loadCurrentSession, listSessions, deleteSession, exportSession, importSession, loadSession } from './storage.js';
-import { initCharacters, getCharactersData } from './characters.js';
+import { initCharacters, getCharactersData, getLMP } from './characters.js';
 import { initEncounters, getEncountersData, updatePECounter } from './encounters.js';
 import { initDice, getDiceLog, setDiceLog } from './dice.js';
+import { initLore, getLoreData, renderCharactersLore } from './lore.js';
 
 let currentSession = null;
 let saveTimeout = null;
@@ -54,7 +55,7 @@ window.showCombatResults = function(title, results) {
     const detail = document.createElement('span');
     detail.className = 'cr-detail';
     const bonusStr = r.bonus >= 0 ? `+${r.bonus}` : `${r.bonus}`;
-    detail.textContent = `${r.dado.toUpperCase()}: ${r.roll} ${bonusStr}`;
+    detail.textContent = `${r.dado.toUpperCase()}: ${r.rollStr || r.roll} ${bonusStr}`;
 
     const total = document.createElement('span');
     total.className = 'cr-total';
@@ -91,6 +92,11 @@ function requestAutosave() {
   saveTimeout = setTimeout(() => {
     performSave();
 
+    const lmpSpan = document.getElementById('global-lmp');
+    if (lmpSpan) {
+      lmpSpan.textContent = getLMP();
+    }
+
     const indicator = document.getElementById('autosave-indicator');
     if (indicator) {
       indicator.classList.add('saved');
@@ -105,6 +111,7 @@ function performSave() {
   currentSession.characters = getCharactersData();
   currentSession.encounters = getEncountersData();
   currentSession.diceLog = getDiceLog();
+  currentSession.lore = getLoreData();
 
   const nameInput = document.getElementById('session-name');
   if (nameInput) {
@@ -128,10 +135,15 @@ function initApp(session) {
 
   initCharacters(session, requestAutosave);
   initEncounters(session, requestAutosave);
+  initLore(session, requestAutosave);
   setDiceLog(session.diceLog || []);
 
-  // Aggiorna contatore PE
+  // Aggiorna contatore PE e LMP
   updatePECounter();
+  const lmpSpan = document.getElementById('global-lmp');
+  if (lmpSpan) {
+    lmpSpan.textContent = getLMP();
+  }
 
   renderSessionsList();
 }
@@ -152,6 +164,10 @@ function setupTabs() {
       const targetPanel = document.getElementById(targetId);
       if (targetPanel) {
         targetPanel.classList.add('active');
+      }
+      
+      if (tab.getAttribute('data-tab') === 'lore') {
+        renderCharactersLore();
       }
     });
   });

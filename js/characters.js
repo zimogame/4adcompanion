@@ -26,6 +26,30 @@ const CLASSES_DB = {
 let characters = [];
 let onStateChange = () => {};
 
+export function getLMP() {
+  if (!characters || characters.length === 0) return 1;
+  return Math.max(...characters.map(c => Number(c.livello) || 1));
+}
+
+export function getGrado(livello) {
+  const L = Number(livello) || 1;
+  if (L <= 4) return 1;
+  if (L <= 9) return 2;
+  if (L <= 14) return 3;
+  if (L <= 19) return 4;
+  return 5;
+}
+
+export function getBaseDie(grado) {
+  switch(Number(grado)) {
+    case 1: return 'd6';
+    case 2: return 'd8';
+    case 3: return 'd10';
+    case 4: return 'd12';
+    default: return 'd20';
+  }
+}
+
 export function getCharactersData() {
   return deepClone(characters);
 }
@@ -64,6 +88,15 @@ export function initCharacters(session, onChangeCallback) {
       characters.push(getDefaultCharacter());
     }
   }
+
+  // Ascolta gli aggiornamenti della lore dalla tab Lore
+  window.addEventListener('updateCharacterLore', (e) => {
+    const { index, lore } = e.detail;
+    if (characters[index]) {
+      characters[index].lore = lore;
+      onStateChange();
+    }
+  });
 
   const grid = document.getElementById('characters-grid');
   const template = document.getElementById('character-card-template');
@@ -107,8 +140,6 @@ function bindCharacterCard(card, char, index) {
   bindInput(card, '.char-vita-attuale', char, 'vitaAttuale', 'number');
   bindInput(card, '.char-vita-max', char, 'vitaMax', 'number');
   bindInput(card, '.char-oro', char, 'oro', 'number');
-  bindInput(card, '.char-attacco', char, 'attacco', 'select');
-  bindInput(card, '.char-difesa', char, 'difesa', 'select');
   bindInput(card, '.char-ordine-marcia', char, 'ordineMarcia', 'select');
   bindInput(card, '.char-lanterna', char, 'lanterna', 'checkbox');
   bindInput(card, '.char-fasciato', char, 'fasciato', 'checkbox');
@@ -184,6 +215,24 @@ function bindInput(card, selector, char, field, type) {
 }
 
 function updateClassStats(card, char, isClassChange = false) {
+  const L = char.livello || 1;
+  const grado = getGrado(L);
+  const baseDie = getBaseDie(grado);
+  
+  // Update Grado display
+  const gradoInput = card.querySelector('.char-grado');
+  if (gradoInput) gradoInput.value = grado;
+  
+  // Update Attacco/Difesa dice display
+  const attInput = card.querySelector('.char-attacco');
+  if (attInput) attInput.value = baseDie.toUpperCase();
+  const difInput = card.querySelector('.char-difesa');
+  if (difInput) difInput.value = baseDie.toUpperCase();
+  
+  // Save to char for backward compatibility or direct use in roll
+  char.attacco = baseDie;
+  char.difesa = baseDie;
+
   if (!char.classe || !CLASSES_DB[char.classe]) {
     card.querySelector('.char-innato-att').textContent = "+0";
     card.querySelector('.char-innato-dif').textContent = "+0";
@@ -191,7 +240,6 @@ function updateClassStats(card, char, isClassChange = false) {
   }
   
   const cls = CLASSES_DB[char.classe];
-  const L = char.livello || 1;
   
   // Update Max HP
   const oldMax = char.vitaMax;
@@ -369,25 +417,6 @@ function setupArmamento(card, char, charIndex) {
       inpBonus.value = item.bonus || 0;
       inpBonus.addEventListener('change', (e) => { item.bonus = Number(e.target.value); onStateChange(); });
       
-      const selDado = document.createElement('select');
-      selDado.className = 'field-select arm-dado';
-      const dadoOpts = [
-        {val: '', text: '—'},
-        {val: 'd4', text: 'D4'},
-        {val: 'd6', text: 'D6'},
-        {val: 'd8', text: 'D8'},
-        {val: 'd10', text: 'D10'},
-        {val: 'd12', text: 'D12'}
-      ];
-      dadoOpts.forEach(opt => {
-        const option = document.createElement('option');
-        option.value = opt.val;
-        option.textContent = opt.text;
-        if (item.dado === opt.val) option.selected = true;
-        selDado.appendChild(option);
-      });
-      selDado.addEventListener('change', (e) => { item.dado = e.target.value; onStateChange(); });
-      
       const btnRemove = document.createElement('button');
       btnRemove.className = 'btn-remove';
       btnRemove.title = 'Rimuovi';
@@ -403,7 +432,6 @@ function setupArmamento(card, char, charIndex) {
       div.appendChild(lblCheckbox);
       div.appendChild(lblBonus);
       div.appendChild(inpBonus);
-      div.appendChild(selDado);
       div.appendChild(btnRemove);
       
       container.appendChild(div);
@@ -412,7 +440,7 @@ function setupArmamento(card, char, charIndex) {
   
   btnAdd.addEventListener('click', () => {
     if (!char.armamento) char.armamento = [];
-    char.armamento.push({nome: '', tipo: 'M', equipaggiato: false, bonus: 0, dado: ''});
+    char.armamento.push({nome: '', tipo: 'M', equipaggiato: false, bonus: 0});
     onStateChange();
     render();
   });
@@ -554,11 +582,35 @@ function setupIndizi(card, char, index) {
   container.appendChild(div);
 }
 
-function rollDie(dieType) {
-  if (!dieType || typeof dieType !== 'string' || !dieType.startsWith('d')) return 0;
+export function rollExplodingDie(dieType) {
+  if (!dieType || typeof dieType !== 'string' || !dieType.startsWith('d')) return { total: 0, rolls: [] };
   const sides = parseInt(dieType.substring(1), 10);
-  if (isNaN(sides) || sides <= 0) return 0;
-  return Math.floor(Math.random() * sides) + 1;
+  if (isNaN(sides) || sides <= 0) return { total: 0, rolls: [] };
+  
+  let explosionThreshold = sides; // fallback
+  if (sides === 6) explosionThreshold = 6;
+  else if (sides === 8) explosionThreshold = 7;
+  else if (sides === 10) explosionThreshold = 8;
+  else if (sides === 12) explosionThreshold = 9;
+  else if (sides === 20) explosionThreshold = 10;
+  else explosionThreshold = sides; // Non-standard dice explode only on max
+
+  let total = 0;
+  let rolls = [];
+  let currentRoll = 0;
+  
+  do {
+    currentRoll = Math.floor(Math.random() * sides) + 1;
+    total += currentRoll;
+    rolls.push(currentRoll);
+  } while (currentRoll >= explosionThreshold);
+  
+  return { total, rolls };
+}
+
+export function formatRollString(rolls) {
+  if (rolls.length === 1) return `${rolls[0]}`;
+  return `${rolls.join(' + ')}`;
 }
 
 function rollMelee(char) {
@@ -575,16 +627,17 @@ function rollMelee(char) {
   const attInnato = (char.classe && CLASSES_DB[char.classe]) ? CLASSES_DB[char.classe].attBase(char.livello || 1) : 0;
   
   const results = equipped.map(arma => {
-    const dado = arma.dado || char.attacco || 'd6';
-    const roll = rollDie(dado);
+    const dado = char.attacco || 'd6';
+    const rollResult = rollExplodingDie(dado);
     const bonus = Number(arma.bonus) || 0;
     const totalBonus = bonus + attInnato;
     return {
       arma: arma.nome || 'Arma',
       dado: dado,
-      roll: roll,
+      roll: rollResult.total,
+      rollStr: formatRollString(rollResult.rolls),
       bonus: totalBonus,
-      totale: roll + totalBonus
+      totale: rollResult.total + totalBonus
     };
   });
   
@@ -607,16 +660,17 @@ function rollRanged(char) {
   const attInnato = (char.classe && CLASSES_DB[char.classe]) ? CLASSES_DB[char.classe].attBase(char.livello || 1) : 0;
   
   const results = equipped.map(arma => {
-    const dado = arma.dado || char.attacco || 'd6';
-    const roll = rollDie(dado);
+    const dado = char.attacco || 'd6';
+    const rollResult = rollExplodingDie(dado);
     const bonus = Number(arma.bonus) || 0;
     const totalBonus = bonus + attInnato;
     return {
       arma: arma.nome || 'Arma',
       dado: dado,
-      roll: roll,
+      roll: rollResult.total,
+      rollStr: formatRollString(rollResult.rolls),
       bonus: totalBonus,
-      totale: roll + totalBonus
+      totale: rollResult.total + totalBonus
     };
   });
   
@@ -627,7 +681,7 @@ function rollRanged(char) {
 
 function rollDefense(char) {
   const dado = char.difesa || 'd6';
-  const roll = rollDie(dado);
+  const rollResult = rollExplodingDie(dado);
   
   const difInnato = (char.classe && CLASSES_DB[char.classe]) ? CLASSES_DB[char.classe].difBase(char.livello || 1) : 0;
   
@@ -638,9 +692,10 @@ function rollDefense(char) {
   const results = [{
     arma: 'Difesa (Armatura/Scudo)',
     dado: dado,
-    roll: roll,
+    roll: rollResult.total,
+    rollStr: formatRollString(rollResult.rolls),
     bonus: totalBonus,
-    totale: roll + totalBonus
+    totale: rollResult.total + totalBonus
   }];
   
   if (window.showCombatResults) {
