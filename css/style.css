@@ -74,11 +74,16 @@ body {
   justify-content: center;
   padding: 1.5rem 1rem;
   border-bottom: 1px solid var(--border-gold);
-  background: linear-gradient(to bottom, rgba(13, 13, 15, 0.9), rgba(13, 13, 15, 0.5));
+  background: linear-gradient(to bottom, rgba(13, 13, 15, 0.95), rgba(13, 13, 15, 0.85));
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  transition: padding 0.3s ease;
+}
+
+.app-header.scrolled {
+  padding: 0.5rem 1rem;
 }
 
 .app-title {
@@ -90,6 +95,12 @@ body {
   letter-spacing: 2px;
   margin-bottom: 0.25rem;
   text-align: center;
+  transition: font-size 0.3s ease, margin 0.3s ease;
+}
+
+.app-header.scrolled .app-title {
+  font-size: 1.4rem;
+  margin-bottom: 0;
 }
 
 .app-subtitle {
@@ -98,6 +109,16 @@ body {
   color: var(--text-secondary);
   letter-spacing: 1px;
   text-transform: uppercase;
+  transition: opacity 0.3s ease, height 0.3s ease, margin 0.3s ease;
+  opacity: 1;
+  height: auto;
+}
+
+.app-header.scrolled .app-subtitle {
+  opacity: 0;
+  height: 0;
+  margin: 0;
+  overflow: hidden;
 }
 
 .autosave-indicator {
@@ -425,6 +446,7 @@ body {
 
 .encounter-type-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
 }
 
@@ -1081,6 +1103,20 @@ body {
   font-size: 1.1rem;
   margin: 0 0.15rem;
   align-self: center;
+}
+
+.vita-group {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  gap: 0.25rem;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  gap: 0.5rem;
 }
 
 /* === Combat Row === */

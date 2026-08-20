@@ -113,10 +113,12 @@
         <div class="card-header-row">
           <label class="field-label">Livello</label>
           <input type="number" class="field-input field-sm char-livello" min="1" max="5" value="1">
-          <label class="field-label">Vita ❤️</label>
-          <input type="number" class="field-input field-sm char-vita-attuale" min="0" value="0" title="Vita attuale">
-          <span class="vita-separator">/</span>
-          <input type="number" class="field-input field-sm char-vita-max" min="0" value="0" title="Vita massima">
+          <div class="vita-group">
+            <label class="field-label">Vita ❤️</label>
+            <input type="number" class="field-input field-sm char-vita-attuale" min="0" value="0" title="Vita attuale">
+            <span class="vita-separator">/</span>
+            <input type="number" class="field-input field-sm char-vita-max" min="0" value="0" title="Vita massima">
+          </div>
           <label class="field-label">Oro</label>
           <input type="number" class="field-input field-sm char-oro" min="0" value="0">
         </div>
@@ -145,10 +147,14 @@
         </div>
         <!-- Row 4: Lanterna, Fasciato, Ordine di Marcia -->
         <div class="card-header-row">
-          <label class="field-label">Lanterna</label>
-          <input type="checkbox" class="field-checkbox char-lanterna">
-          <label class="field-label">Fasciato</label>
-          <input type="checkbox" class="field-checkbox char-fasciato">
+          <div class="checkbox-group">
+            <label class="field-label">Lanterna</label>
+            <input type="checkbox" class="field-checkbox char-lanterna">
+          </div>
+          <div class="checkbox-group">
+            <label class="field-label">Fasciato</label>
+            <input type="checkbox" class="field-checkbox char-fasciato">
+          </div>
           <label class="field-label">Ordine di Marcia</label>
           <select class="field-select char-ordine-marcia">
             <option value="0">—</option>
@@ -263,8 +269,12 @@
           <div class="encounter-field-row">
             <label class="field-label">Livello</label>
             <input type="number" class="field-input field-sm enc-livello" min="1" value="1">
+          </div>
+          <div class="encounter-field-row">
             <label class="field-label">Numero</label>
             <input type="number" class="field-input field-sm enc-numero" min="1" value="1">
+          </div>
+          <div class="encounter-field-row">
             <label class="field-label">Att./Round</label>
             <input type="number" class="field-input field-sm enc-attacchi" min="1" value="1">
           </div>

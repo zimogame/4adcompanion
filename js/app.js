@@ -325,4 +325,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   initApp(initialSession);
+
+  // Shrink header on scroll
+  window.addEventListener('scroll', () => {
+    const header = document.querySelector('.app-header');
+    if (header) {
+      if (window.scrollY > 20) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    }
+  });
 });
