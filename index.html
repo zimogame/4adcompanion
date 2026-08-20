@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4AD Companion</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <h1 class="app-title">⚔️ Four Against Darkness</h1>
+    <span class="app-subtitle">Companion di Gioco</span>
+    <span id="autosave-indicator" class="autosave-indicator">Salvato</span>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="tab-nav" id="tab-nav">
+    <button class="tab-btn active" data-tab="characters">⚔️ Personaggi</button>
+    <button class="tab-btn" data-tab="encounters">🐉 Incontri</button>
+    <button class="tab-btn" data-tab="dice">🎲 Dadi</button>
+    <button class="tab-btn" data-tab="session">💾 Sessione</button>
+  </nav>
+
+  <!-- Main Content Panels -->
+  <main class="main-content">
+
+    <!-- 1. Characters Panel -->
+    <div class="tab-content active" id="characters-panel">
+      <div class="characters-grid" id="characters-grid">
+        <!-- Dynamically populated character cards -->
+      </div>
+    </div>
+
+    <!-- 2. Encounters Panel -->
+    <div class="tab-content" id="encounters-panel">
+      <div class="encounters-header">
+        <h2>Registro Incontri</h2>
+        <div class="pe-counter" id="pe-counter">
+          <span class="pe-label">PE</span>
+          <span class="pe-value" id="pe-value">0</span>
+        </div>
+        <button class="btn btn-primary" id="add-encounter-btn">+ Nuovo Incontro</button>
+      </div>
+      <div class="encounters-list" id="encounters-list">
+        <!-- Dynamically populated encounter cards -->
+      </div>
+    </div>
+
+    <!-- 3. Dice Panel -->
+    <div class="tab-content" id="dice-panel">
+      <h2>Simulatore Dadi</h2>
+      <div class="dice-result" id="dice-result">
+        <span class="dice-result-number" id="dice-result-number">—</span>
+        <span class="dice-result-label" id="dice-result-label"></span>
+      </div>
+      <div class="dice-buttons" id="dice-buttons">
+        <button class="dice-btn" data-die="d4">D4</button>
+        <button class="dice-btn" data-die="d6">D6</button>
+        <button class="dice-btn" data-die="d8">D8</button>
+        <button class="dice-btn" data-die="d10">D10</button>
+        <button class="dice-btn" data-die="d12">D12</button>
+      </div>
+      <div class="dice-special-buttons">
+        <button class="btn btn-special" data-die="d66">D66</button>
+        <button class="btn btn-special" data-die="2d6">2D6</button>
+      </div>
+      <div class="dice-log" id="dice-log">
+        <h3 class="section-title">Storico Lanci</h3>
+        <div class="dice-log-entries" id="dice-log-entries"></div>
+      </div>
+    </div>
+
+    <!-- 4. Session Panel -->
+    <div class="tab-content" id="session-panel">
+      <h2>Gestione Sessione</h2>
+      <input type="text" class="field-input" id="session-name" placeholder="Nome sessione...">
+      <div class="session-actions">
+        <button class="btn btn-primary" id="save-session-btn">💾 Salva Sessione</button>
+        <button class="btn btn-secondary" id="new-session-btn">📄 Nuova Sessione</button>
+        <button class="btn btn-secondary" id="export-session-btn">📤 Esporta JSON</button>
+        <button class="btn btn-secondary" id="import-session-btn">📥 Importa JSON</button>
+        <input type="file" id="import-file-input" accept=".json" hidden>
+      </div>
+      <h3 class="section-title">Sessioni Salvate</h3>
+      <div class="sessions-list" id="sessions-list"></div>
+    </div>
+
+  </main>
+
+  <!-- ===== TEMPLATES ===== -->
+
+  <!-- Character Card Template (v2) -->
+  <template id="character-card-template">
+    <div class="character-card" data-char-index="">
+      <div class="card-header">
+        <!-- Row 1: Nome e Classe -->
+        <div class="card-header-row">
+          <label class="field-label">Nome</label>
+          <input type="text" class="field-input char-nome" placeholder="Nome personaggio">
+          <label class="field-label">Classe</label>
+          <input type="text" class="field-input char-classe" placeholder="Classe">
+        </div>
+        <!-- Row 2: Livello, Vita (max/attuale), Oro -->
+        <div class="card-header-row">
+          <label class="field-label">Livello</label>
+          <input type="number" class="field-input field-sm char-livello" min="1" max="5" value="1">
+          <label class="field-label">Vita ❤️</label>
+          <input type="number" class="field-input field-sm char-vita-attuale" min="0" value="0" title="Vita attuale">
+          <span class="vita-separator">/</span>
+          <input type="number" class="field-input field-sm char-vita-max" min="0" value="0" title="Vita massima">
+          <label class="field-label">Oro</label>
+          <input type="number" class="field-input field-sm char-oro" min="0" value="0">
+        </div>
+        <!-- Row 3: Attacco (dado + pulsanti mischia/distanza) e Difesa (dado + pulsante) -->
+        <div class="card-header-row combat-row">
+          <label class="field-label">Attacco</label>
+          <select class="field-select char-attacco">
+            <option value="d4">D4</option>
+            <option value="d6" selected>D6</option>
+            <option value="d8">D8</option>
+            <option value="d10">D10</option>
+            <option value="d12">D12</option>
+          </select>
+          <button class="btn btn-combat btn-melee" data-action="roll-melee" title="Attacco in mischia">⚔️</button>
+          <button class="btn btn-combat btn-ranged" data-action="roll-ranged" title="Attacco a distanza">🏹</button>
+
+          <label class="field-label">Difesa</label>
+          <select class="field-select char-difesa">
+            <option value="d4">D4</option>
+            <option value="d6" selected>D6</option>
+            <option value="d8">D8</option>
+            <option value="d10">D10</option>
+            <option value="d12">D12</option>
+          </select>
+          <button class="btn btn-combat btn-defense" data-action="roll-defense" title="Tiro difesa">🛡️</button>
+        </div>
+        <!-- Row 4: Lanterna, Fasciato, Ordine di Marcia -->
+        <div class="card-header-row">
+          <label class="field-label">Lanterna</label>
+          <input type="checkbox" class="field-checkbox char-lanterna">
+          <label class="field-label">Fasciato</label>
+          <input type="checkbox" class="field-checkbox char-fasciato">
+          <label class="field-label">Ordine di Marcia</label>
+          <select class="field-select char-ordine-marcia">
+            <option value="0">—</option>
+            <option value="1">1° (Fronte)</option>
+            <option value="2">2°</option>
+            <option value="3">3°</option>
+            <option value="4">4° (Retro)</option>
+          </select>
+        </div>
+        <!-- Row 5: Razioni -->
+        <div class="card-header-row razioni-row">
+          <label class="field-label">Razioni</label>
+          <button class="btn btn-sm btn-razione-minus" data-action="razioni-minus">−</button>
+          <span class="razioni-display char-razioni-display"></span>
+          <button class="btn btn-sm btn-razione-plus" data-action="razioni-plus">+</button>
+          <span class="razioni-count char-razioni-count"></span>
+        </div>
+      </div>
+
+      <!-- Abilità -->
+      <div class="card-section">
+        <h3 class="section-title">Abilità</h3>
+        <div class="list-container char-abilita"></div>
+        <button class="btn btn-sm btn-add" data-action="add-abilita">+ Aggiungi Abilità</button>
+      </div>
+
+      <!-- Tratti (NUOVO) -->
+      <div class="card-section">
+        <h3 class="section-title">Tratti</h3>
+        <div class="list-container char-tratti"></div>
+        <button class="btn btn-sm btn-add" data-action="add-tratti">+ Aggiungi Tratto</button>
+      </div>
+
+      <!-- Equipaggiamento -->
+      <div class="card-section">
+        <h3 class="section-title">Equipaggiamento</h3>
+        <div class="list-container char-equipaggiamento"></div>
+        <button class="btn btn-sm btn-add" data-action="add-equipaggiamento">+ Aggiungi Equipaggiamento</button>
+      </div>
+
+      <!-- Armamento (NUOVO) -->
+      <div class="card-section">
+        <h3 class="section-title">Armamento</h3>
+        <div class="armamento-container char-armamento"></div>
+        <button class="btn btn-sm btn-add" data-action="add-armamento">+ Aggiungi Armamento</button>
+      </div>
+
+      <!-- Tesoro (NUOVO) -->
+      <div class="card-section">
+        <h3 class="section-title">Tesoro</h3>
+        <div class="list-container char-tesoro"></div>
+        <button class="btn btn-sm btn-add" data-action="add-tesoro">+ Aggiungi Tesoro</button>
+      </div>
+
+      <!-- Incantesimi · Pergamene · Poteri -->
+      <div class="card-section">
+        <div class="spells-header">
+          <h3 class="section-title">Incantesimi · Pergamene · Poteri</h3>
+          <div class="spells-max-group">
+            <label class="field-label">Max</label>
+            <input type="number" class="field-input field-sm char-max-incantesimi" min="0" value="0">
+          </div>
+        </div>
+        <div class="spells-warning char-spells-warning" hidden>
+          ⚠️ Incantesimi lanciati superiori al massimo!
+        </div>
+        <div class="spells-container char-incantesimi"></div>
+        <button class="btn btn-sm btn-add" data-action="add-incantesimo">+ Aggiungi</button>
+      </div>
+
+      <!-- Note (era Missioni) -->
+      <div class="card-section">
+        <h3 class="section-title">Note</h3>
+        <textarea class="field-textarea char-note" placeholder="Note..."></textarea>
+      </div>
+
+      <!-- Indizi (1 sola riga) -->
+      <div class="card-section">
+        <h3 class="section-title">Indizi</h3>
+        <div class="clues-container char-indizi"></div>
+      </div>
+
+      <!-- Status -->
+      <div class="card-section">
+        <h3 class="section-title">Status</h3>
+        <input type="text" class="field-input char-status" placeholder="Stato del personaggio...">
+      </div>
+    </div>
+  </template>
+
+  <!-- Encounter Card Template (v2) -->
+  <template id="encounter-card-template">
+    <div class="encounter-card" data-encounter-index="">
+      <div class="encounter-header">
+        <div class="encounter-type-group">
+          <label class="radio-label"><input type="radio" name="" class="enc-tipo" value="seguaci" checked> Seguaci</label>
+          <label class="radio-label"><input type="radio" name="" class="enc-tipo" value="boss"> Boss</label>
+          <label class="radio-label"><input type="radio" name="" class="enc-tipo" value="maggiore"> Maggiore</label>
+          <label class="radio-label"><input type="radio" name="" class="enc-tipo" value="infestante"> Infestante</label>
+        </div>
+        <div class="encounter-actions">
+          <button class="btn btn-sm btn-success enc-complete" title="Completa incontro">✓</button>
+          <button class="btn btn-sm btn-danger enc-delete" title="Elimina incontro">✕</button>
+        </div>
+      </div>
+      <div class="encounter-body">
+        <div class="encounter-fields">
+          <div class="encounter-field-row">
+            <label class="field-label">Nome</label>
+            <input type="text" class="field-input enc-nome" placeholder="Nome creatura">
+          </div>
+          <div class="encounter-field-row">
+            <label class="field-label">Livello</label>
+            <input type="number" class="field-input field-sm enc-livello" min="1" value="1">
+            <label class="field-label">Numero</label>
+            <input type="number" class="field-input field-sm enc-numero" min="1" value="1">
+            <label class="field-label">Att./Round</label>
+            <input type="number" class="field-input field-sm enc-attacchi" min="1" value="1">
+          </div>
+          <div class="encounter-field-row">
+            <label class="checkbox-label"><input type="checkbox" class="enc-fuggito"> Fuggito</label>
+            <label class="checkbox-label"><input type="checkbox" class="enc-imboscata"> Imboscata</label>
+            <label class="checkbox-label"><input type="checkbox" class="enc-corrotto"> Corrotto</label>
+          </div>
+        </div>
+        <div class="encounter-hp">
+          <span class="section-label">Punti Vita</span>
+          <div class="hp-circles"></div>
+        </div>
+        <div class="encounter-notes">
+          <label class="field-label">Note</label>
+          <input type="text" class="field-input enc-note" placeholder="Note...">
+        </div>
+      </div>
+      <!-- Collapsed summary (shown when completed) -->
+      <div class="encounter-summary" hidden>
+        <span class="enc-summary-type"></span>
+        <span class="enc-summary-name"></span>
+        <span class="enc-summary-badge">✓ Completato</span>
+      </div>
+    </div>
+  </template>
+
+  <!-- Modals and Toasts -->
+  <div class="modal-overlay" id="confirm-modal" hidden>
+    <div class="modal-card">
+      <p class="modal-message" id="confirm-modal-message"></p>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="confirm-modal-yes">Conferma</button>
+        <button class="btn btn-secondary" id="confirm-modal-no">Annulla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Combat Result Modal -->
+  <div class="modal-overlay" id="combat-modal" hidden>
+    <div class="modal-card combat-results-card">
+      <h3 class="modal-title" id="combat-modal-title"></h3>
+      <div class="combat-results" id="combat-results"></div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="combat-modal-close">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden>
+    <span id="toast-message"></span>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/storage.js"></script>
+  <script type="module" src="js/characters.js"></script>
+  <script type="module" src="js/encounters.js"></script>
+  <script type="module" src="js/dice.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
