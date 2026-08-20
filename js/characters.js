@@ -1,5 +1,28 @@
 import { deepClone } from './storage.js';
 
+const CLASSES_DB = {
+  "Acrobata": { pvFormula: L => L + 3, attBase: L => Math.floor(L / 2), difBase: L => L, speciale: "Acrobazie (Punti = L+3), Furtività +L. Salvezza caduta/nuoto/arrampicata +L, trappole +½L." },
+  "Assassino": { pvFormula: L => L + 3, attBase: L => Math.floor(L / 2), difBase: L => 0, speciale: "" },
+  "Baluardo": { pvFormula: L => L + 7, attBase: L => Math.floor(L / 2), difBase: L => Math.floor(L / 2), speciale: "" },
+  "Barbaro": { pvFormula: L => L + 7, attBase: L => L, difBase: L => 0, speciale: "Furia barbarica." },
+  "Chierico": { pvFormula: L => L + 4, attBase: L => Math.floor(L / 2), difBase: L => 0, speciale: "Guarigione, Bonus +L contro non morti." },
+  "Dimachærus": { pvFormula: L => L + 5, attBase: L => Math.floor(L / 2), difBase: L => Math.floor(L / 2), speciale: "Combatte con due armi." },
+  "Druido": { pvFormula: L => L + 3, attBase: L => 0, difBase: L => 0, speciale: "Magia druidica." },
+  "Elfo": { pvFormula: L => L + 4, attBase: L => L, difBase: L => 0, speciale: "Magia. +L attacco mischia/distanza (tranne armi a due mani). +1 contro Orchi." },
+  "Furfante": { pvFormula: L => L + 3, attBase: L => 0, difBase: L => L, speciale: "+L attacco contro Nemici Minori in inferiorità numerica. Furtività +L, Trappole +L." },
+  "Gnomo": { pvFormula: L => L + 4, attBase: L => 0, difBase: L => Math.floor(L / 2), speciale: "Magia gnomesca. Furtività." },
+  "Guerriero": { pvFormula: L => L + 6, attBase: L => L, difBase: L => 0, speciale: "Nessuna restrizione su armi o armature." },
+  "Illusionista": { pvFormula: L => L + 2, attBase: L => 0, difBase: L => 0, speciale: "Magia illusoria." },
+  "Kukla": { pvFormula: L => L + 5, attBase: L => 1, difBase: L => Math.floor(L / 2), speciale: "+1 fisso attacco con armi leggere da taglio." },
+  "Mago": { pvFormula: L => L + 2, attBase: L => 0, difBase: L => 0, speciale: "+L ai Tiri Incantesimo." },
+  "Mezzuomo": { pvFormula: L => L + 3, attBase: L => 0, difBase: L => 0, speciale: "+L Difesa contro Giganti, Troll, Ogre. +L Attacco con Fionda. Furtività +L." },
+  "Monaco Fungoide": { pvFormula: L => L + 4, attBase: L => L, difBase: L => 0, speciale: "+L attacco con armi del monaco o mani nude." },
+  "Nano": { pvFormula: L => L + 5, attBase: L => L, difBase: L => 0, speciale: "+L mischia, nessun bonus a distanza. +1 Difesa contro giganti/troll/ogre. Cercare oro." },
+  "Paladino": { pvFormula: L => L + 6, attBase: L => L, difBase: L => 0, speciale: "Aura e abilità sacre." },
+  "Ranger": { pvFormula: L => L + 6, attBase: L => L, difBase: L => 0, speciale: "Maestria terre selvagge." },
+  "Spadaccino": { pvFormula: L => L + 4, attBase: L => Math.floor(L / 2), difBase: L => Math.floor(L / 2), speciale: "Due attacchi per turno. Punti Maestria." }
+};
+
 let characters = [];
 let onStateChange = () => {};
 
@@ -61,9 +84,25 @@ export function initCharacters(session, onChangeCallback) {
 }
 
 function bindCharacterCard(card, char, index) {
+  // Populate class select
+  const classSelect = card.querySelector('.char-classe');
+  if (classSelect && classSelect.options.length === 0) {
+    const emptyOpt = document.createElement('option');
+    emptyOpt.value = "";
+    emptyOpt.textContent = "— Seleziona —";
+    classSelect.appendChild(emptyOpt);
+    
+    Object.keys(CLASSES_DB).sort().forEach(className => {
+      const opt = document.createElement('option');
+      opt.value = className;
+      opt.textContent = className;
+      classSelect.appendChild(opt);
+    });
+  }
+
   // Simple field bindings
   bindInput(card, '.char-nome', char, 'nome', 'text');
-  bindInput(card, '.char-classe', char, 'classe', 'text');
+  bindInput(card, '.char-classe', char, 'classe', 'select');
   bindInput(card, '.char-livello', char, 'livello', 'number');
   bindInput(card, '.char-vita-attuale', char, 'vitaAttuale', 'number');
   bindInput(card, '.char-vita-max', char, 'vitaMax', 'number');
@@ -98,6 +137,9 @@ function bindCharacterCard(card, char, index) {
   
   const btnDefense = card.querySelector('[data-action="roll-defense"]');
   if (btnDefense) btnDefense.addEventListener('click', () => rollDefense(char));
+
+  // Initialize UI state
+  updateClassStats(card, char, false);
 }
 
 function bindInput(card, selector, char, field, type) {
@@ -124,8 +166,66 @@ function bindInput(card, selector, char, field, type) {
       let val = e.target.value;
       if (type === 'number') val = Number(val);
       char[field] = val;
+      
+      if (field === 'livello') {
+        updateClassStats(card, char);
+      }
       onStateChange();
     });
+  }
+
+  // Special listener for class change (since it's a select)
+  if (field === 'classe') {
+    el.addEventListener('change', (e) => {
+      updateClassStats(card, char, true);
+      onStateChange();
+    });
+  }
+}
+
+function updateClassStats(card, char, isClassChange = false) {
+  if (!char.classe || !CLASSES_DB[char.classe]) {
+    card.querySelector('.char-innato-att').textContent = "+0";
+    card.querySelector('.char-innato-dif').textContent = "+0";
+    return;
+  }
+  
+  const cls = CLASSES_DB[char.classe];
+  const L = char.livello || 1;
+  
+  // Update Max HP
+  const oldMax = char.vitaMax;
+  const newMax = cls.pvFormula(L);
+  char.vitaMax = newMax;
+  const vitaMaxInput = card.querySelector('.char-vita-max');
+  if (vitaMaxInput) vitaMaxInput.value = newMax;
+  
+  // Clamp current HP if it exceeds new max
+  if (char.vitaAttuale > newMax) {
+    char.vitaAttuale = newMax;
+    const vitaAttualeInput = card.querySelector('.char-vita-attuale');
+    if (vitaAttualeInput) vitaAttualeInput.value = newMax;
+  }
+  
+  // Update Innate Bonuses Display
+  const attInnato = cls.attBase(L);
+  const difInnato = cls.difBase(L);
+  card.querySelector('.char-innato-att').textContent = (attInnato >= 0 ? "+" : "") + attInnato;
+  card.querySelector('.char-innato-dif').textContent = (difInnato >= 0 ? "+" : "") + difInnato;
+  
+  // If class just changed, add special traits to abilities if not present
+  if (isClassChange && cls.speciale) {
+    if (!char.abilita) char.abilita = [];
+    if (!char.abilita.includes(cls.speciale)) {
+      char.abilita.push(cls.speciale);
+      // Re-render abilita list
+      const abilitaContainer = card.querySelector('.char-abilita');
+      if (abilitaContainer) {
+        // Find the index to re-setup or just trigger a re-render.
+        // It's easier to just call setupSimpleList again.
+        setupSimpleList(card, char, card.dataset.charIndex, 'abilita', '.char-abilita', '[data-action="add-abilita"]');
+      }
+    }
   }
 }
 
@@ -472,16 +572,19 @@ function rollMelee(char) {
     return;
   }
   
+  const attInnato = (char.classe && CLASSES_DB[char.classe]) ? CLASSES_DB[char.classe].attBase(char.livello || 1) : 0;
+  
   const results = equipped.map(arma => {
     const dado = arma.dado || char.attacco || 'd6';
     const roll = rollDie(dado);
     const bonus = Number(arma.bonus) || 0;
+    const totalBonus = bonus + attInnato;
     return {
       arma: arma.nome || 'Arma',
       dado: dado,
       roll: roll,
-      bonus: bonus,
-      totale: roll + bonus
+      bonus: totalBonus,
+      totale: roll + totalBonus
     };
   });
   
@@ -501,16 +604,19 @@ function rollRanged(char) {
     return;
   }
   
+  const attInnato = (char.classe && CLASSES_DB[char.classe]) ? CLASSES_DB[char.classe].attBase(char.livello || 1) : 0;
+  
   const results = equipped.map(arma => {
     const dado = arma.dado || char.attacco || 'd6';
     const roll = rollDie(dado);
     const bonus = Number(arma.bonus) || 0;
+    const totalBonus = bonus + attInnato;
     return {
       arma: arma.nome || 'Arma',
       dado: dado,
       roll: roll,
-      bonus: bonus,
-      totale: roll + bonus
+      bonus: totalBonus,
+      totale: roll + totalBonus
     };
   });
   
@@ -523,15 +629,18 @@ function rollDefense(char) {
   const dado = char.difesa || 'd6';
   const roll = rollDie(dado);
   
+  const difInnato = (char.classe && CLASSES_DB[char.classe]) ? CLASSES_DB[char.classe].difBase(char.livello || 1) : 0;
+  
   const equipped = (char.armamento || []).filter(a => a.equipaggiato && (a.tipo === 'A' || a.tipo === 'S'));
   const bonusSum = equipped.reduce((sum, arma) => sum + (Number(arma.bonus) || 0), 0);
+  const totalBonus = bonusSum + difInnato;
   
   const results = [{
     arma: 'Difesa (Armatura/Scudo)',
     dado: dado,
     roll: roll,
-    bonus: bonusSum,
-    totale: roll + bonusSum
+    bonus: totalBonus,
+    totale: roll + totalBonus
   }];
   
   if (window.showCombatResults) {

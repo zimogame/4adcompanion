@@ -79,7 +79,6 @@ body {
   top: 0;
   z-index: 100;
   backdrop-filter: blur(12px);
-  transition: padding 0.3s ease;
 }
 
 .app-header.scrolled {
@@ -95,7 +94,6 @@ body {
   letter-spacing: 2px;
   margin-bottom: 0.25rem;
   text-align: center;
-  transition: font-size 0.3s ease, margin 0.3s ease;
 }
 
 .app-header.scrolled .app-title {
@@ -109,16 +107,10 @@ body {
   color: var(--text-secondary);
   letter-spacing: 1px;
   text-transform: uppercase;
-  transition: opacity 0.3s ease, height 0.3s ease, margin 0.3s ease;
-  opacity: 1;
-  height: auto;
 }
 
 .app-header.scrolled .app-subtitle {
-  opacity: 0;
-  height: 0;
-  margin: 0;
-  overflow: hidden;
+  display: none;
 }
 
 .autosave-indicator {
@@ -267,10 +259,16 @@ body {
   font-size: 0.95rem;
 }
 
-.field-input:focus {
+.field-input[readonly] {
+  color: var(--text-secondary);
+  border-bottom-style: dashed;
+  cursor: not-allowed;
+}
+
+.field-input:not([readonly]):focus {
   border-bottom-color: var(--accent-gold);
+  background: rgba(255, 255, 255, 0.02);
   outline: none;
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .field-input::placeholder {
@@ -1117,6 +1115,28 @@ body {
   align-items: center;
   white-space: nowrap;
   gap: 0.5rem;
+}
+
+/* === Bonus Innati === */
+.bonus-innati-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.innato-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+}
+.innato-val {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-gold);
 }
 
 /* === Combat Row === */

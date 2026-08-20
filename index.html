@@ -107,7 +107,7 @@
           <label class="field-label">Nome</label>
           <input type="text" class="field-input char-nome" placeholder="Nome personaggio">
           <label class="field-label">Classe</label>
-          <input type="text" class="field-input char-classe" placeholder="Classe">
+          <select class="field-select char-classe"></select>
         </div>
         <!-- Row 2: Livello, Vita (max/attuale), Oro -->
         <div class="card-header-row">
@@ -117,7 +117,12 @@
             <label class="field-label">Vita ❤️</label>
             <input type="number" class="field-input field-sm char-vita-attuale" min="0" value="0" title="Vita attuale">
             <span class="vita-separator">/</span>
-            <input type="number" class="field-input field-sm char-vita-max" min="0" value="0" title="Vita massima">
+            <input type="number" class="field-input field-sm char-vita-max" min="0" value="0" title="Vita massima" readonly>
+          </div>
+          <div class="bonus-innati-group">
+            <span class="innato-label">Innato:</span>
+            <span class="innato-val" title="Bonus Base Attacco">⚔️ <span class="char-innato-att">+0</span></span>
+            <span class="innato-val" title="Bonus Base Difesa">🛡️ <span class="char-innato-dif">+0</span></span>
           </div>
           <label class="field-label">Oro</label>
           <input type="number" class="field-input field-sm char-oro" min="0" value="0">
