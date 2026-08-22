@@ -601,6 +601,17 @@ body {
   color: var(--accent-gold-bright);
 }
 
+.dice-btn-normal {
+  border: 2px solid var(--text-secondary);
+  color: var(--text-secondary);
+}
+.dice-btn-normal:hover {
+  background: rgba(160, 160, 175, 0.2);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  box-shadow: 0 0 15px rgba(160, 160, 175, 0.4);
+}
+
 .dice-btn:active {
   transform: scale(0.95);
 }

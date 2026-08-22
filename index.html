@@ -97,12 +97,21 @@
         <span class="dice-result-number" id="dice-result-number">—</span>
         <span class="dice-result-label" id="dice-result-label"></span>
       </div>
-      <div class="dice-buttons" id="dice-buttons">
+      <div class="dice-buttons" id="dice-buttons" style="margin-bottom: 0;">
+        <h4 style="width: 100%; text-align: center; margin-bottom: 0.5rem; color: var(--accent-gold);">Dadi Esplosivi</h4>
         <button class="dice-btn" data-die="d4">D4</button>
         <button class="dice-btn" data-die="d6">D6</button>
         <button class="dice-btn" data-die="d8">D8</button>
         <button class="dice-btn" data-die="d10">D10</button>
         <button class="dice-btn" data-die="d12">D12</button>
+      </div>
+      <div class="dice-buttons" id="dice-buttons-normal" style="padding-top: 0;">
+        <h4 style="width: 100%; text-align: center; margin-bottom: 0.5rem; color: var(--text-secondary);">Dadi Normali</h4>
+        <button class="dice-btn dice-btn-normal" data-die="d4" data-normal="true">D4</button>
+        <button class="dice-btn dice-btn-normal" data-die="d6" data-normal="true">D6</button>
+        <button class="dice-btn dice-btn-normal" data-die="d8" data-normal="true">D8</button>
+        <button class="dice-btn dice-btn-normal" data-die="d10" data-normal="true">D10</button>
+        <button class="dice-btn dice-btn-normal" data-die="d12" data-normal="true">D12</button>
       </div>
       <div class="dice-special-buttons">
         <button class="btn btn-special" data-die="d66">D66</button>

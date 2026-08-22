@@ -11,7 +11,8 @@ export function initDice(onRollCallback) {
   diceBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const dieType = btn.getAttribute('data-die');
-      rollDie(dieType);
+      const isNormal = btn.getAttribute('data-normal') === 'true';
+      rollDie(dieType, isNormal);
     });
   });
   
@@ -36,7 +37,7 @@ export function setDiceLog(log) {
   renderLog();
 }
 
-function rollDie(dieType) {
+function rollDie(dieType, isNormal = false) {
   const resultElem = document.getElementById('dice-result-number');
   const labelElem = document.getElementById('dice-result-label');
   
@@ -47,6 +48,7 @@ function rollDie(dieType) {
   setTimeout(() => {
     let result = '';
     let displayLabel = dieType.toUpperCase();
+    if (isNormal) displayLabel += ' (Normale)';
     
     if (dieType === 'd66') {
       const d1 = Math.floor(Math.random() * 6) + 1;
@@ -60,11 +62,16 @@ function rollDie(dieType) {
       result = `${sum}`;
       displayLabel = `2D6: ${d1}+${d2} = ${sum}`;
     } else {
-      // standard die (exploding)
-      const rollResult = rollExplodingDie(dieType);
-      result = `${rollResult.total}`;
-      if (rollResult.rolls.length > 1) {
-        displayLabel = `${dieType.toUpperCase()}: ${formatRollString(rollResult.rolls)} = ${result}`;
+      if (isNormal) {
+        const sides = parseInt(dieType.substring(1), 10);
+        result = `${Math.floor(Math.random() * sides) + 1}`;
+      } else {
+        // standard die (exploding)
+        const rollResult = rollExplodingDie(dieType);
+        result = `${rollResult.total}`;
+        if (rollResult.rolls.length > 1) {
+          displayLabel = `${dieType.toUpperCase()}: ${formatRollString(rollResult.rolls)} = ${result}`;
+        }
       }
     }
     
